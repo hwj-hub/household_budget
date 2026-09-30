@@ -3685,12 +3685,15 @@ function clearKept() { try { localStorage.removeItem(TXK); } catch (e) { /* 무�
    · 저장 직전에 드라이브 판 번호(version)를 보고, 다른 기기가 먼저 고쳤으면 덮어쓰지 않고 묻는다.
    · GD_CLIENT(구글 클라우드 OAuth 클라이언트 ID)가 비어 있으면 드라이브 칸을 통째로 숨긴다.
    ─────────────────────────────────────────── */
-const GD_CLIENT = '';
+const GD_CLIENT = '1018243687186-iesbq2r6rlt33pklcja16cvg3e8rm0f4.apps.googleusercontent.com';
+/* 구글 쪽 앱이 「테스트 중」이면 테스트 사용자만 로그인된다 — 그때는 false 로 두고 주소에 ?gd=1 을 붙인 사람에게만 칸을 보인다.
+   2026-09-30 구글 인증 플랫폼에서 「프로덕션」으로 게시함 */
+const GD_OPEN = true;
 const GD_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const GDK = 'household_budget.gdrive';
 const GD_FILES = 'https://www.googleapis.com/drive/v3/files', GD_UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-const GD = { client: GD_CLIENT, tok: '', exp: 0, email: '', name: '', on: false, files: {}, dirty: false, busy: '', at: 0, ask: null, lib: null, t: 0 };
+const GD = { client: GD_OPEN || /[?&]gd=1(&|$)/.test(location.search) ? GD_CLIENT : '', tok: '', exp: 0, email: '', name: '', on: false, files: {}, dirty: false, busy: '', at: 0, ask: null, lib: null, t: 0 };
 
 function gdLoadMem() {
   try {
