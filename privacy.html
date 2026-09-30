@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>개인정보처리방침 · 가계부 만들기</title>
+<meta name="description" content="가계부 만들기 도구가 다루는 정보, 브라우저에 남기는 정보, 구글 드라이브 저장 때의 Google 사용자 데이터 처리 방침입니다.">
+<style>
+:root{color-scheme:light dark;--bg:#f3f4fa;--card:#fff;--fg:#161a33;--muted:#5b6180;--line:#dfe2ef;--accent:#0f766e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0f1c;--card:#161a2e;--fg:#e8eaf6;--muted:#a1a7c6;--line:#2a2f4a;--accent:#5eead4}}
+:root[data-theme="dark"]{--bg:#0d0f1c;--card:#161a2e;--fg:#e8eaf6;--muted:#a1a7c6;--line:#2a2f4a;--accent:#5eead4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.75;word-break:keep-all;overflow-wrap:anywhere;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:28px 16px 48px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;margin-top:14px}
+h1{font-size:1.5em;margin:0 0 4px;letter-spacing:-.5px}
+h2{font-size:1.08em;margin:0 0 8px;color:var(--accent)}
+p,li{font-size:15px}
+p{margin:0 0 8px}
+ul{margin:0;padding-left:20px}
+li{margin:4px 0}
+.muted{color:var(--muted);font-size:13.5px}
+a{color:var(--accent);font-weight:700}
+code{font-size:13px;background:color-mix(in srgb,var(--accent) 10%,transparent);padding:1px 5px;border-radius:5px}
+blockquote{margin:8px 0 0;padding:10px 14px;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:0 10px 10px 0;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+  <h1>개인정보처리방침</h1>
+  <p class="muted"><a href="./">가계부 만들기</a> · 시행일 2026년 9월 30일</p>
+
+  <section class="card">
+    <h2>1. 이 도구가 다루는 정보</h2>
+    <p>가계부 만들기는 넣은 카드·통장 내역 파일과 입력한 내용을 <b>이용자의 브라우저 안에서만</b> 읽고 계산해 엑셀·PDF 파일을 만듭니다.
+      이 내용은 이 사이트나 운영자의 서버로 전송되지 않으며, 운영자는 회원 가입을 받지 않고 이용자의 개인정보를 수집하지 않습니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. 이용자의 브라우저에 남기는 정보</h2>
+    <p>다음 정보는 이용자 기기의 브라우저 저장소(localStorage)에만 남고, 어디로도 전송되지 않습니다.</p>
+    <ul>
+      <li>장부 종류·기간·분류·예산 등 설정, 가게별 분류 규칙, 이용자가 뺀 줄의 기억</li>
+      <li>「이 기기에 저장」을 켠 경우에만: 불러오고 적은 거래 내역</li>
+      <li>구글 드라이브에 연결한 경우에만: 연결한 Google 계정의 이메일 주소·이름, 드라이브 파일 ID</li>
+    </ul>
+    <p class="muted">도구의 「내역 모두 지우기」·「연결 끊기」, 또는 브라우저의 사이트 데이터 삭제로 언제든 지울 수 있습니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>3. 구글 드라이브 저장(Google 사용자 데이터)</h2>
+    <ul>
+      <li>이용자가 「구글 드라이브에 저장하고 이어 쓰기」를 직접 누른 경우에만 Google 로그인을 요청합니다.</li>
+      <li>요청하는 권한은 Google Drive API 의 <code>drive.file</code> 하나입니다. 이 권한으로 <b>이 도구가 만든 가계부 파일(xlsx)</b>을 이용자 본인의 Google Drive 에 만들고, 읽고, 고칩니다. 드라이브의 다른 파일은 보거나 고칠 수 없습니다.</li>
+      <li>연결한 계정을 화면에 보여 주기 위해 Google 계정의 이메일 주소와 이름을 읽으며, 이 값은 2번과 같이 이용자 브라우저에만 저장됩니다.</li>
+      <li>가계부 파일과 계정 정보는 이용자의 브라우저와 Google 사이에서만 오가며, 운영자의 서버로 전송되거나 저장되지 않습니다. 운영자는 Google 사용자 데이터를 수집·보관하지 않고, 제3자에게 제공하거나 광고·분석에 사용하지 않으며, 사람이 열람하지 않습니다.</li>
+      <li>연결은 도구의 「연결 끊기」, 또는 Google 계정 → 보안 → 「타사 앱 및 서비스」에서 언제든 해제할 수 있습니다. 해제해도 이미 만든 파일은 이용자의 드라이브에 남으며, 필요 없으면 드라이브에서 지우면 됩니다.</li>
+    </ul>
+    <blockquote>
+      가계부 만들기가 Google API 에서 받은 정보를 사용하고 다른 앱으로 전송하는 것은 제한적 사용(Limited Use) 요구사항을 포함한
+      <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API 서비스 사용자 데이터 정책</a>을 준수합니다.<br>
+      <span class="muted">The use and transfer of information received from Google APIs to any other app by this tool will adhere to the Google API Services User Data Policy, including the Limited Use requirements.</span>
+    </blockquote>
+  </section>
+
+  <section class="card">
+    <h2>4. 광고</h2>
+    <p>이 페이지에는 카카오 애드핏 광고가 표시될 수 있습니다. 광고 사업자는 광고를 보여 주고 측정하기 위해 쿠키나 광고 식별자를 사용할 수 있으며,
+      이는 해당 사업자의 개인정보처리방침을 따릅니다. 이 도구가 다루는 가계부 내용과 Google 사용자 데이터는 광고에 사용되지 않습니다.</p>
+  </section>
+
+  <section class="card">
+    <h2>5. 문의와 변경</h2>
+    <p>이 방침에 대한 문의는 <a href="https://github.com/hwj-hub/household_budget/issues" target="_blank" rel="noopener">GitHub 저장소의 이슈</a>로 남겨 주세요.
+      방침이 바뀌면 이 페이지에 시행일과 함께 알립니다.</p>
+  </section>
+</main>
+</body>
+</html>
