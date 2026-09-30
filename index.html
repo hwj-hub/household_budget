@@ -526,6 +526,17 @@ svg.chart .cg{stroke:#E5E7EB;stroke-width:1}
 .gdfine{margin-top:6px}
 .gd[hidden],.gd [hidden]{display:none !important}
 #gdFaq[hidden]{display:none !important}
+/* 예시 · 되돌리기 */
+.openrow{display:flex;gap:6px;align-items:stretch}
+.openrow .open{flex:1 1 auto;min-width:0}
+.openrow .smpbtn{flex:0 0 auto;margin-top:0;min-height:44px;font-size:13px;white-space:nowrap;padding:8px 12px}
+@media (max-width:480px){.openrow .open i{display:none}}
+.fi.smp{border-style:dashed}
+.hbtns{display:inline-flex;align-items:center;gap:4px;letter-spacing:0}
+.hb{min-width:34px;height:30px;padding:0 8px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-family:inherit;font-size:16px;font-weight:800;line-height:1;cursor:pointer}
+.hb:disabled{opacity:.35;cursor:default}
+.hbtns .pvstate{margin-left:4px}
+#mbar .hb{flex:none;height:38px;min-width:38px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -570,6 +581,7 @@ svg.chart .cg{stroke:#E5E7EB;stroke-width:1}
   <h2><span><span class="n">1</span>어떤 장부 · 기간</span><span class="pvinfo" id="setHint"></span></h2>
   <div class="row openrow">
     <button class="mini wide open" id="openBook" type="button">📂 저장해 둔 가계부 엑셀 열기 <i>이어서 쓰기</i></button>
+    <button class="mini smpbtn" id="sampleBtn" type="button">✨ 예시 보기</button>
     <input type="file" id="bookFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
   </div>
   <div class="gd" id="gdBox" hidden>
@@ -748,7 +760,7 @@ svg.chart .cg{stroke:#E5E7EB;stroke-width:1}
   <!-- 광고 자리 ② PC 미리보기 카드 바로 위 320×50 · 좁은 화면에서는 숨깁니다 -->
   <div class="ad-slot" id="ad-side"></div>
   <section class="card pv" id="pvCard">
-    <h2><span>미리보기 · 저장</span><span class="pvstate" id="pvState"></span></h2>
+    <h2><span>미리보기 · 저장</span><span class="hbtns"><button class="hb h-undo" type="button" title="되돌리기 (Ctrl+Z)" aria-label="되돌리기">↶</button><button class="hb h-redo" type="button" title="다시 실행 (Ctrl+Y)" aria-label="다시 실행">↷</button><span class="pvstate" id="pvState"></span></span></h2>
     <div class="actions">
       <button class="btn pri" id="dlXlsx" type="button">엑셀로 저장<i>자동 합계 .xlsx</i></button>
       <button class="btn" id="dlPdf" type="button">인쇄용 PDF<i>손으로 쓰기</i></button>
@@ -941,7 +953,7 @@ svg.chart .cg{stroke:#E5E7EB;stroke-width:1}
 <div id="anchor"><span class="amk">광고</span><div class="ad-slot" id="ad-anchor"></div>
   <button class="axl" id="anchorX" type="button" aria-label="광고 닫기">✕</button></div>
 
-<div id="mbar"><div class="in"><div class="k">미리보기 · 저장<b id="mbarTxt">가계부</b></div><button class="go" id="mbarGo" type="button">미리보기 ↓</button></div></div>
+<div id="mbar"><div class="in"><div class="k">미리보기 · 저장<b id="mbarTxt">가계부</b></div><button class="hb h-undo" type="button" aria-label="되돌리기">↶</button><button class="hb h-redo" type="button" aria-label="다시 실행">↷</button><button class="go" id="mbarGo" type="button">미리보기 ↓</button></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="printArea"></div>
 <script>
@@ -3938,6 +3950,141 @@ function gdInit() {
   setInterval(() => { if (GD.on) gdPaint(); }, 30000);
   if (!IA.on) setTimeout(() => gdLib().catch(() => {}), 1200);
 }
+/* ─── hist.js ─── 되돌리기 · 다시 실행 ───
+   · 바뀔 때마다(changed) 잠깐 기다렸다가 장부 전체(설정 + 세 장부의 내역·파일 목록)를 한 장면으로 찍어 둔다.
+     글자를 치는 동안은 350ms 안에 이어진 변화를 한 장면으로 묶는다.
+   · 장면은 JSON 문자열 — 같으면 쌓지 않는다. 50장면 또는 모두 40MB 까지(넘으면 오래된 것부터 버림).
+   · 글 칸 안에서 누른 Ctrl+Z 는 브라우저 몫(그 칸의 글자 되돌리기)이다.
+   ─────────────────────────────────────────── */
+const HIST = { past: [], future: [], cur: '', t: 0 };
+function histSnap() {
+  STORE[TX_MODE] = { tx: TX, files: FILES };
+  return JSON.stringify({ S, store: STORE, mode: TX_MODE, seq: [txSeq, fileSeq, catSeq] });
+}
+function histInit() { HIST.past = []; HIST.future = []; HIST.cur = histSnap(); paintHist(); }
+function histSoon() { clearTimeout(HIST.t); HIST.t = setTimeout(histCommit, 350); }
+function histCommit() {
+  clearTimeout(HIST.t);
+  const s = histSnap();
+  if (s === HIST.cur) return;
+  HIST.past.push(HIST.cur);
+  HIST.cur = s; HIST.future = [];
+  let size = HIST.past.reduce((a, x) => a + x.length, 0);
+  while (HIST.past.length > 50 || (size > 40e6 && HIST.past.length > 1)) size -= HIST.past.shift().length;
+  paintHist();
+}
+function histApply(s) {
+  const o = JSON.parse(s);
+  S = o.S;
+  for (const m of ['home', 'kid', 'club']) STORE[m] = o.store[m];
+  TX_MODE = o.mode; TX = STORE[TX_MODE].tx; FILES = STORE[TX_MODE].files;
+  /* 번호는 뒤로 돌리지 않는다 — 되돌린 뒤 새로 만든 줄이 버린 장면의 번호와 겹치지 않게 */
+  txSeq = Math.max(txSeq, o.seq[0]); fileSeq = Math.max(fileSeq, o.seq[1]); catSeq = Math.max(catSeq, o.seq[2]);
+  useMode(S.mode);
+  bookOpened(); renderImport();
+  HIST.cur = histSnap();
+  changed({ hist: false });
+  paintHist();
+}
+function histUndo() {
+  histCommit();
+  if (!HIST.past.length) { toast('더 되돌릴 것이 없습니다'); return; }
+  HIST.future.push(HIST.cur);
+  histApply(HIST.past.pop());
+  toast('되돌렸습니다' + (HIST.past.length ? '' : ' · 처음 상태'), 1600);
+}
+function histRedo() {
+  histCommit();
+  if (!HIST.future.length) { toast('다시 실행할 것이 없습니다'); return; }
+  HIST.past.push(HIST.cur);
+  histApply(HIST.future.pop());
+  toast('다시 실행했습니다', 1600);
+}
+function paintHist() {
+  const u = !HIST.past.length, r = !HIST.future.length;
+  $$('.h-undo').forEach(b => { b.disabled = u; });
+  $$('.h-redo').forEach(b => { b.disabled = r; });
+}
+function histKeys(e) {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const t = e.target, tag = t && t.tagName;
+  if (tag === 'INPUT' && !/^(checkbox|radio|button|file)$/i.test(t.type) || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); histUndo(); }
+  else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); histRedo(); }
+}
+/* ─── sample.js ─── 「예시로 채워 보기」 ───
+   · 지금 고른 장부(가계부·용돈기입장·금전출납부)를 예시 설정과 석 달 치 내역으로 채운다 — 오늘이 든 달과 그 앞 두 달.
+   · 예시 내역은 파일 한 개(kind 'sample')로 묶어, 목록에서 ✕ 하나로 걷어 낼 수 있다. 되돌리기로도 돌아간다.
+   · 가게 이름은 업체명 없이 일반 명사로, 사람 이름은 누가 봐도 예시인 이름으로.
+   · 구글 드라이브에 연결된 동안에는 넣지 않는다(자동 저장이 내 가계부 파일을 예시로 덮는다).
+   ─────────────────────────────────────────── */
+const SAMPLE = {
+  home: {
+    title: '예시 가계부',
+    out: { '식비': 450000, '외식·배달': 150000, '카페·간식': 40000, '생활용품': 80000, '주거·관리비': 200000, '통신': 90000, '교통·차량': 120000,
+      '의료·건강': 50000, '보험': 80000, '쇼핑·의류': 100000, '미용': 40000, '문화·여가': 60000, '경조사·선물': 100000 },
+    inn: { '월급': 2850000 }, sav: { '적금·예금': 400000 },
+    fixed: { '관리비': 190000, '통신비': 55000, '보험료': 80000 },
+    /* [날짜, 들어옴?, 내용, 분류, 금액, 결제수단, 몇 번째 달(없으면 매달)] */
+    rows: [
+      [25, 1, '월급', '월급', 2850000, '계좌이체'], [26, 0, '적금 자동이체', '적금·예금', 400000, '계좌이체'],
+      [2, 0, '동네 마트', '식비', 68400, '체크카드'], [9, 0, '시장 장보기', '식비', 43500, '현금'], [16, 0, '동네 마트', '식비', 91200, '체크카드'], [23, 0, '동네 마트', '식비', 57800, '체크카드'],
+      [5, 0, '치킨 배달', '외식·배달', 21000, '신용카드'], [12, 0, '국밥집', '외식·배달', 18000, '신용카드'], [19, 0, '김밥집', '외식·배달', 9500, '신용카드'], [27, 0, '피자 배달', '외식·배달', 26900, '신용카드'],
+      [3, 0, '커피전문점', '카페·간식', 4500, '신용카드'], [8, 0, '커피전문점', '카페·간식', 5200, '신용카드'], [14, 0, '빵집', '카페·간식', 7800, '신용카드'], [21, 0, '커피전문점', '카페·간식', 4500, '신용카드'],
+      [6, 0, '주유소', '교통·차량', 62000, '신용카드'], [18, 0, '교통카드 충전', '교통·차량', 30000, '체크카드'],
+      [11, 0, '생활용품점', '생활용품', 12300, '체크카드'], [20, 0, '약국', '의료·건강', 6500, '현금'],
+      [13, 0, '영화관', '문화·여가', 28000, '신용카드', 0], [17, 0, '옷가게', '쇼핑·의류', 39000, '신용카드', 1], [10, 1, '중고 판매', '부수입', 25000, '계좌이체', 1],
+      [15, 0, '미용실', '미용', 22000, '신용카드', 1], [22, 0, '결혼 축의금', '경조사·선물', 50000, '계좌이체', 2], [7, 0, '병원 진료', '의료·건강', 12400, '신용카드', 2]
+    ]
+  },
+  kid: {
+    title: '홍길동의 용돈기입장', kAllow: 30000, kStart: 5000, kGoal: '자전거', kGoalAmt: 150000,
+    rows: [
+      [4, 0, '편의점 과자', '간식', 1500], [9, 0, '공책·연필', '학용품', 2500], [15, 1, '심부름', '심부름·상', 3000], [18, 0, '버스', '교통', 1500],
+      [23, 0, '떡볶이', '간식', 3000], [12, 0, '친구 생일 선물', '선물', 5000, '', 1], [20, 1, '할머니 용돈', '세뱃돈·선물', 10000, '', 1], [26, 0, '색종이', '학용품', 1000, '', 2]
+    ]
+  },
+  club: {
+    title: '○○ 산악회 금전출납부(예시)', cCarry: 500000, cFee: 20000, members: ['홍길동', '김철수', '이영희', '박영수'],
+    rows: [
+      [12, 0, '정기 모임 식대', '식대·다과', 180000, '카드전표'], [26, 0, '회의 다과', '식대·다과', 23000, '영수증', 1],
+      [18, 0, '회원 경조사 부조', '경조사', 100000, '계좌이체', 1], [8, 0, '현수막 제작', '물품', 45000, '영수증', 0], [28, 1, '예금 이자', '이자', 120, '계좌이체', 2]
+    ]
+  }
+};
+function loadSample() {
+  if (GD.on) { toast('구글 드라이브에 연결된 동안에는 예시를 넣지 않습니다 — 내 가계부 파일이 예시로 덮이지 않게요', 5200); return; }
+  const m = S.mode, P = SAMPLE[m];
+  const t = ymd(TODAY), s0 = ymd(dnOf(t.y, t.m - 2, 1));
+  S.sy = s0.y; S.sm = s0.m; S.n = 12;
+  if (m === 'home') S.day = 1;
+  S.title[m] = P.title;
+  const B = S[m] = freshBook(m);
+  const setAmt = (list, map) => { for (const c of list) if (map && map[c.n] != null) c.b = map[c.n]; };
+  setAmt(B.out, P.out); setAmt(B.inn, P.inn); setAmt(B.sav, P.sav);
+  for (const f of B.fixed) if (P.fixed && P.fixed[f.n] != null) f.a = P.fixed[f.n];
+  if (m === 'kid') Object.assign(S, { kAllow: P.kAllow, kStart: P.kStart, kGoal: P.kGoal, kGoalAmt: P.kGoalAmt });
+  if (m === 'club') Object.assign(S, { cCarry: P.cCarry, cFee: P.cFee, members: P.members.join('\n') });
+  const fid = ++fileSeq, rows = [];
+  const push = (k, r) => {
+    const dn = dnOf(s0.y, s0.m + k, r[0]);
+    if (dn > TODAY) return;
+    rows.push({ id: ++txSeq, fid, src: 'hand', dn, time: '', desc: r[2], memo: '', dir: r[1] ? 'in' : 'out', amt: r[4], kind: '', card: '',
+      cat: r[3], how: 'user', aex: '', uex: null, ex: false, note: '', pay: r[5] || '', cardpay: false });
+  };
+  for (let k = 0; k < 3; k++) {
+    for (const r of P.rows) if (r[6] == null || r[6] === k) push(k, r);
+    if (m === 'club') P.members.forEach((nm, i) => { if (!(i === 3 && k === 2)) push(k, [5 + i, 1, nm, '회비', P.cFee, '계좌이체']); });   /* 한 명은 이번 달 미납 */
+  }
+  rows.sort((a, b) => a.dn - b.dn);
+  TX = rows;
+  FILES = [{ id: fid, name: '예시 내역', kind: 'sample', n: rows.length, skipped: 0, sheet: '', pay: '',
+    from: rows.length ? rows[0].dn : TODAY, to: rows.length ? rows[rows.length - 1].dn : TODAY }];
+  relinkTx();
+  bookOpened(); renderImport(); changed();
+  toast('예시로 채웠습니다 · 되돌리기(↶)를 누르면 전으로 돌아갑니다', 4200);
+}
 /* ─── book.js ─── 엑셀 파일의 설계도 ───
    시트·칸·서식·함수를 여기서 정하고, 같은 설계도로 ① xlsx 파일 ② 화면 미리보기를 만든다.
    함수 칸에는 브라우저가 미리 계산한 값도 같이 넣는다 — 휴대폰 미리보기처럼
@@ -5749,9 +5896,9 @@ function renderImport() {
   $('#impCnt').textContent = has ? TX.length + '건' : '';
   $('#impHint').textContent = has ? FILES.length + '개 파일' : '선택';
   const pays = BK().pays;
-  $('#files').innerHTML = FILES.map(f => '<div class="fi' + (f.kind === 'book' ? ' bk' : '') + '" data-fid="' + f.id + '"><div class="fn"><b>' + escH(f.name) + '</b>' +
-    '<small>' + (f.kind === 'book' ? (f.gd ? '구글 드라이브의 가계부' : '열어 둔 가계부') : f.kind === 'card' ? '카드' : '통장') + ' · ' + f.n + '줄' + (f.n ? ' · ' + fmtMD(f.from) + ' ~ ' + fmtMD(f.to) : '') + (f.skipped ? ' · 못 읽은 줄 ' + f.skipped : '') + '</small></div>' +
-    (S.mode === 'home' && f.kind !== 'book' ? '<select class="sel sm fpay" aria-label="이 파일의 결제수단"><option value="">결제수단 자동</option>' + pays.map(p => '<option' + (f.pay === p ? ' selected' : '') + '>' + escH(p) + '</option>').join('') + '</select>' : '') +
+  $('#files').innerHTML = FILES.map(f => '<div class="fi' + (f.kind === 'book' ? ' bk' : f.kind === 'sample' ? ' smp' : '') + '" data-fid="' + f.id + '"><div class="fn"><b>' + escH(f.name) + '</b>' +
+    '<small>' + (f.kind === 'book' ? (f.gd ? '구글 드라이브의 가계부' : '열어 둔 가계부') : f.kind === 'sample' ? '✕ 로 걷어 내면 빈 장부' : f.kind === 'card' ? '카드' : '통장') + ' · ' + f.n + '줄' + (f.n ? ' · ' + fmtMD(f.from) + ' ~ ' + fmtMD(f.to) : '') + (f.skipped ? ' · 못 읽은 줄 ' + f.skipped : '') + '</small></div>' +
+    (S.mode === 'home' && f.kind !== 'book' && f.kind !== 'sample' ? '<select class="sel sm fpay" aria-label="이 파일의 결제수단"><option value="">결제수단 자동</option>' + pays.map(p => '<option' + (f.pay === p ? ' selected' : '') + '>' + escH(p) + '</option>').join('') + '</select>' : '') +
     '<button class="sq x" type="button" data-rmf="' + f.id + '" aria-label="이 파일 빼기">✕</button></div>').join('');
   $('#impFine').innerHTML = S.keepTx
     ? '불러오고 적은 내역을 <b>이 기기(브라우저)에 저장</b>해 둡니다. 여럿이 쓰는 PC라면 끄고 「내역 모두 지우기」를 누르세요.'
@@ -5812,6 +5959,7 @@ function renderRules() {
 let BOOK = null, bookT = 0;
 function changed(opts) {
   saveState(); paintSpan(); persistSoon(); gdSoon(opts);
+  if (!opts || opts.hist !== false) histSoon();
   clearTimeout(bookT);
   bookT = setTimeout(() => refreshPreview(opts), 80);
 }
@@ -6232,6 +6380,11 @@ function init() {
 
   initInApp();
   gdInit();
+  histInit();
+  $$('.h-undo').forEach(b => b.addEventListener('click', histUndo));
+  $$('.h-redo').forEach(b => b.addEventListener('click', histRedo));
+  document.addEventListener('keydown', histKeys);
+  $('#sampleBtn').addEventListener('click', () => { if (!document.body.classList.contains('ia-lock')) loadSample(); });
   if (!document.body.classList.contains('ia-lock')) AD.init();
   setTab('xl');
   renderImport();
